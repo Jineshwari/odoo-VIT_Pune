@@ -104,12 +104,18 @@ const AdminDashboard = () => {
       return;
     }
     //if (newUser.role === "Employee" && !newUser.managerId) 
+    // if (newUser.role === "Employee" && !newUser.managerId) {
+    //   toast.error("Please assign a manager");
+    //   return;
+    // } {
+    //   toast.error("Please assign a manager for employees");
+    //   return;
+    // }
     if (newUser.role === "Employee" && !newUser.managerId) {
       toast.error("Please assign a manager");
       return;
-    } {
-      toast.error("Please assign a manager for employees");
-      return;
+    } else if (newUser.role === "Manager") {
+      // no manager needed → do nothing
     }
 
     try {
