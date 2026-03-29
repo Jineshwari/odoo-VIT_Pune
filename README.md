@@ -1,96 +1,243 @@
-# Odoo Company Expense Tracker
+# 💼 Reimbursement Management System
 
-A full-stack expense management system for companies built with **React**, **TypeScript**, and **Node.js/Express** with role-based access control.
+### (Odoo x VIT Pune Hackathon 2026)
+
+A full-stack **Reimbursement Management System** developed as part of the
+**Odoo x VIT Pune Hackathon 2026**, addressing real-world challenges in expense tracking, approval workflows, and reimbursement management.
+
+
+## 🎥 Demo Video
+
+🔗 [Add Demo Video Link Here]
+
+---
+## 👥 Team Members
+
+* Aarya Deshpande
+* Aashana Sonarkar
+* Arya Manve
+* Jineshwari Bagul
 
 ---
 
-## Table of Contents
+## 📄 Problem Statement
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Usage](#usage)
-- [API Endpoints](#api-endpoints)
-- [Contributing](#contributing)
-- [License](#license)
+As described in the hackathon:
 
----
+> Companies often struggle with manual expense reimbursement processes that are time-consuming, error-prone, and lack transparency. 
 
-## Features
+### Key challenges addressed:
 
-- Role-based access: Admin, Manager, and Employee
-- Add, view, and manage employees
-- Admin dashboard with:
-  - Total users
-  - Pending approvals
-  - Approval rules
-- Send password emails to new employees
-- CRUD operations on employee data
-- Responsive UI with **Tailwind CSS**
-
+* Multi-level approval flows
+* Role-based expense management
+* Conditional approval rules
+* Transparency in approval lifecycle
 
 ---
 
-## Tech Stack
-
-**Frontend:**
-
-- React + TypeScript
-- Tailwind CSS
-- React Router
-- Sonner for toast notifications
-- Lucide Icons
-
-**Backend:**
-
-- Node.js + Express
-- MongoDB (Mongoose)
-- JWT Authentication
-- Role-based authorization
-- RESTful API endpoints
+## ✨ Features
 
 ---
 
-## Installation
+### 🔐 Authentication & User Management
+
+* Company + Admin auto-created on first signup
+* JWT-based authentication
+* Role-based system:
+
+  * **Admin**
+  * **Manager**
+  * **Employee**
+* Admin can:
+
+  * Create users
+  * Assign roles
+  * Define manager relationships
+
+---
+
+### 💰 Expense Submission (Employee)
+
+* Submit reimbursement requests:
+
+  * Amount
+  * Category
+  * Description
+  * Date
+* View personal expense history
+* Track approval status
+
+---
+
+### 🔄 Multi-Level Approval Workflow
+
+* Sequential approval system:
+
+  * Step 1 → Manager
+  * Step 2 → Admin
+
+* Approval moves to next step only after previous approval
+
+* Supports multiple approvers
+
+---
+
+### 👨‍💼 Manager Features
+
+* View team expenses
+* Approve / Reject requests
+* Add comments during approval
+
+---
+
+### 👨‍💼 Admin Features
+
+* Manage all users
+* Configure approval hierarchy
+* Override approvals
+* View all expenses across company
+
+---
+
+### 🏢 Multi-Tenant Architecture
+
+* Company-based data isolation
+* Separate users and workflows per company
+
+---
+
+## 🧰 Tech Stack
+
+### 🎨 Frontend
+
+* Next.js (React Framework)
+* TypeScript
+* Tailwind CSS
+* Axios
+* Lucide Icons
+
+---
+
+### ⚙️ Backend
+
+* Node.js + Express
+* MySQL
+* JWT Authentication
+* REST APIs
+
+---
+
+### 🔮 Planned Enhancements
+
+* OCR-based receipt scanning (as per problem statement)
+* Currency conversion APIs
+* Conditional approval engine
+
+---
+
+## 🏗️ Project Structure
+
+```bash id="proj-structure"
+project-root/
+│
+├── backend/
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── models/
+│   │   ├── routes/
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│
+└── README.md
+```
+
+---
+
+## ⚙️ Installation
 
 ### Backend
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-Install dependencies:
-
-bash
-Copy code
+```bash id="backend-install"
+cd backend
 npm install
-Create a .env file based on .env.example and add your MongoDB URI and JWT secret.
+```
 
-Start the server:
+Create `.env`:
 
-bash
-Copy code
+```env id="backend-env"
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=yourdb
+JWT_SECRET=secret
+```
+
+Run:
+
+```bash id="backend-run"
 npm run dev
-Server will run at http://localhost:3000
+```
 
-Frontend
-Navigate to the frontend folder:
+---
 
-bash
-Copy code
+### Frontend
+
+```bash id="frontend-install"
 cd frontend
-Install dependencies:
-
-bash
-Copy code
 npm install
-Create a .env file:
-
-env
-Copy code
-VITE_API_URL=http://localhost:3000/api
-Start the frontend:
-
-bash
-Copy code
 npm run dev
-Frontend will run at http://localhost:5173 (or the port shown in terminal)
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Auth
+
+* `POST /api/auth/login`
+
+---
+
+### Expenses
+
+* `POST /api/expenses`
+* `GET /api/expenses/my`
+* `GET /api/expenses/pending`
+
+---
+
+### Approval
+
+* `PUT /api/expenses/:id/approve`
+* `PUT /api/expenses/:id/reject`
+
+---
+
+### Timeline
+
+* `GET /api/expenses/:id/timeline`
+
+---
+
+## 🚀 Future Scope
+
+* OCR integration for receipts
+* Conditional approval engine
+* Email notifications
+* Analytics dashboard
+
+---
+
+## 🏁 Conclusion
+
+This project demonstrates a scalable and real-world implementation of a
+**Reimbursement Management System**, aligned with enterprise requirements and the official hackathon problem statement.
+
+---
+
+
