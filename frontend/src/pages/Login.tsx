@@ -15,31 +15,39 @@ const Login = () => {
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const response = await fetch("http://localhost:3000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
+      console.log("LOGIN RESPONSE:", data);
 
-    if (response.ok) {
-      toast.success(`Welcome ${data.role || "User"}!`);
-      // Redirect based on role from backend response
-      if (data.role === "admin") navigate("/admin");
-      else if (data.role === "manager") navigate("/manager");
-      else navigate("/admin");
-      // Optionally, save token: localStorage.setItem("token", data.token);
-    } else {
-      toast.error(data.message || "Login failed");
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        toast.success(`Welcome ${data.role || "User"}!`);
+        // Redirect based on role from backend response
+
+        // if (data.role === "admin") navigate("/admin");
+        // else if (data.role === "manager") navigate("/manager");
+        // else navigate("/admin");
+        const role = data.role?.toLowerCase() || data.user?.role?.toLowerCase();
+
+        if (role === "admin") navigate("/admin");
+        else if (role === "manager") navigate("/manager");
+        else navigate("/admin");
+        // Optionally, save token: localStorage.setItem("token", data.token);
+      } else {
+        toast.error(data.message || "Login failed");
+      }
+    } catch (error) {
+      toast.error("Network error");
     }
-  } catch (error) {
-    toast.error("Network error");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4">
@@ -92,7 +100,7 @@ const Login = () => {
               >
                 Forgot Password?
               </Button>
-              
+
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
                 <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate("/signup")}>

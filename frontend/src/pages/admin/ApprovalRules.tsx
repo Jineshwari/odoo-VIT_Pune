@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -67,7 +67,7 @@ const SortableApproverRow = ({ approver, index, onToggleRequired, onDelete }: So
       <TableCell>{approver.name}</TableCell>
       <TableCell>{approver.designation}</TableCell>
       <TableCell>
-        <Checkbox 
+        <Checkbox
           checked={approver.required}
           onCheckedChange={() => onToggleRequired(approver.id)}
         />
@@ -101,18 +101,35 @@ const ApprovalRules = () => {
   ]);
   const [newApproverName, setNewApproverName] = useState("");
   const [newApproverDesignation, setNewApproverDesignation] = useState("");
-  
-  const employees = [
-    { id: 1, name: "Marc", role: "Employee", manager: "Sarah" },
-    { id: 2, name: "Sarah Wilson", role: "Employee", manager: "John Doe" },
-    { id: 3, name: "Mark Johnson", role: "Employee", manager: "Sarah Chen" },
-  ];
 
-  const managers = [
-    { id: 1, name: "Sarah" },
-    { id: 2, name: "John Doe" },
-    { id: 3, name: "Sarah Chen" },
-  ];
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/employees`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const data = await res.json();
+        console.log("API RESPONSE:", data);
+
+        setEmployees(data.users);
+
+        // managers = users with role manager
+        const mgrs = data.users.filter(u => u.role === "manager");
+        setManagers(mgrs);
+
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -138,11 +155,11 @@ const ApprovalRules = () => {
       toast.error("Please enter approver name and designation");
       return;
     }
-    setApprovers([...approvers, { 
-      id: Date.now().toString(), 
-      name: newApproverName, 
+    setApprovers([...approvers, {
+      id: Date.now().toString(),
+      name: newApproverName,
       designation: newApproverDesignation,
-      required: false 
+      required: false
     }]);
     setNewApproverName("");
     setNewApproverDesignation("");
@@ -155,7 +172,7 @@ const ApprovalRules = () => {
   };
 
   const handleToggleRequired = (id: string) => {
-    setApprovers(approvers.map(a => 
+    setApprovers(approvers.map(a =>
       a.id === id ? { ...a, required: !a.required } : a
     ));
   };
@@ -200,9 +217,11 @@ const ApprovalRules = () => {
               <Label>User</Label>
               <Select value={selectedEmployee} onValueChange={(value) => {
                 setSelectedEmployee(value);
-                const employee = employees.find(e => e.name === value);
-                if (employee) {
-                  setAssignedManager(employee.manager);
+                const employee = employees.find(e => e.id === Number(value));
+
+                if (employee?.manager_id) {
+                  const manager = employees.find(e => e.id === employee.manager_id);
+                  if (manager) setAssignedManager(String(manager.id));
                 }
               }}>
                 <SelectTrigger className="bg-background">
@@ -210,8 +229,8 @@ const ApprovalRules = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border z-50">
                   {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.name}>
-                      {emp.name}
+                    <SelectItem key={emp.id} value={String(emp.id)}>
+                      {emp.username}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -240,8 +259,8 @@ const ApprovalRules = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border z-50">
                       {managers.map((manager) => (
-                        <SelectItem key={manager.id} value={manager.name}>
-                          {manager.name}
+                        <SelectItem key={manager.id} value={String(manager.id)}>
+                          {manager.username}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -253,7 +272,7 @@ const ApprovalRules = () => {
 
                 {/* Is Manager an Approver */}
                 <div className="flex items-center space-x-2 border border-border rounded-lg p-4 bg-muted/30">
-                  <Checkbox 
+                  <Checkbox
                     id="isManagerApprover"
                     checked={isManagerApprover}
                     onCheckedChange={(checked) => setIsManagerApprover(checked as boolean)}
@@ -269,9 +288,9 @@ const ApprovalRules = () => {
                 {/* Approvers Section */}
                 <div className="space-y-3">
                   <Label className="text-base font-semibold">Approvers</Label>
-                  
+
                   <div className="border border-border rounded-lg overflow-hidden">
-                    <DndContext 
+                    <DndContext
                       sensors={sensors}
                       collisionDetection={closestCenter}
                       onDragEnd={handleDragEnd}
@@ -288,7 +307,7 @@ const ApprovalRules = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          <SortableContext 
+                          <SortableContext
                             items={approvers.map(a => a.id)}
                             strategy={verticalListSortingStrategy}
                           >
@@ -334,7 +353,7 @@ const ApprovalRules = () => {
 
                 {/* Approvers Sequence Checkbox */}
                 <div className="flex items-start space-x-2 border border-border rounded-lg p-4 bg-muted/30">
-                  <Checkbox 
+                  <Checkbox
                     id="approversSequence"
                     checked={approversSequence}
                     onCheckedChange={(checked) => setApproversSequence(checked as boolean)}
@@ -344,8 +363,8 @@ const ApprovalRules = () => {
                       Approvers Sequence
                     </Label>
                     <p className="text-xs text-muted-foreground mt-1">
-                      If this field is ticked true then the above mentioned sequence of approvers matters, 
-                      that is first the request goes to John, if he approves/rejects then only request goes 
+                      If this field is ticked true then the above mentioned sequence of approvers matters,
+                      that is first the request goes to John, if he approves/rejects then only request goes
                       to Mitchell and so on.
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">

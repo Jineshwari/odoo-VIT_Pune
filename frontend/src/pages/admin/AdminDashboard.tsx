@@ -32,22 +32,45 @@ const AdminDashboard = () => {
   });
 
   const token = localStorage.getItem("token") || "";
+  const role = JSON.parse(atob(token.split('.')[1])).user.role;
+
+  // if (role !== "admin") {
+  //   navigate("/login"); // or manager dashboard
+  // }
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      const role = decoded.user.role?.toLowerCase();
+
+      if (role !== "admin") {
+        navigate(`/${role}`); // redirect properly
+      }
+    } catch (err) {
+      navigate("/login");
+    }
+  }, []);
 
   // Fetch all users
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_BASE}/auth/employees`, {
+      const res = await fetch(`${API_BASE}/employees`, {
         method: "GET", // GET request to fetch all employees
         headers: { Authorization: `Bearer ${token}` }, // attach token
       });
       const data = await res.json();
       if (res.ok) {
         const mappedUsers: User[] = data.users.map((u: any) => ({
-          id: u._id,
+          id: u.id,
           name: u.username,
           role: u.role,
           manager: u.manager?.username || "",
-          managerId: u.manager?._id || "",
+          managerId: u.manager?.id || "",
           email: u.email
         }));
         setUsers(mappedUsers);
@@ -66,7 +89,9 @@ const AdminDashboard = () => {
     fetchUsers();
   }, []);
 
-  const managers = users.filter(u => u.role === "Manager");
+  const managers = users.filter(
+    u => u.role?.toLowerCase() === "manager"
+  );
 
   // Add new user
   const handleAddUser = async () => {
@@ -78,7 +103,11 @@ const AdminDashboard = () => {
       toast.error("Please select a role");
       return;
     }
+    //if (newUser.role === "Employee" && !newUser.managerId) 
     if (newUser.role === "Employee" && !newUser.managerId) {
+      toast.error("Please assign a manager");
+      return;
+    } {
       toast.error("Please assign a manager for employees");
       return;
     }
@@ -87,11 +116,14 @@ const AdminDashboard = () => {
       const payload = {
         username: newUser.name,
         email: newUser.email,
-        role: newUser.role,
-        manager_id: newUser.role === "Employee" ? newUser.managerId : null,
+        role: newUser.role.toLowerCase(),
+        // manager_id: newUser.role === "Employee" ? newUser.managerId : null,
+        manager_id: newUser.role === "Employee"
+          ? Number(newUser.managerId)
+          : null,
       };
 
-      const res = await fetch(`${API_BASE}/auth/employees`, {
+      const res = await fetch(`${API_BASE}/employees`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -276,22 +308,34 @@ const AdminDashboard = () => {
                     <TableCell>
                       {newUser.role === "Employee" ? (
                         <Select
-                          value={newUser.manager}
+                          value={newUser.managerId || undefined}
                           onValueChange={(value) => {
-                            const selectedManager = managers.find((m) => m.name === value);
-                            setNewUser({
-                              ...newUser,
-                              manager: value,
-                              managerId: selectedManager?.id || "",
-                            });
+                            const selectedManager = managers.find((m) => m.id === value);
+
+                            setNewUser((prev) => ({
+                              ...prev,
+                              managerId: value,
+                              manager: selectedManager?.name || "",
+                            }));
                           }}
+                        // onValueChange={(value) => {
+                        //   const selectedManager = managers.find((m) => m.name === value);
+                        //   setNewUser({
+                        //     ...newUser,
+                        //     manager: value,
+                        //     managerId: selectedManager?.id || "",
+                        //   });
+                        // }}
                         >
                           <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Assign manager" />
+                            {/* <SelectValue placeholder="Assign manager" /> */}
+                            <SelectValue>
+                              {newUser.manager || "Assign manager"}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent className="bg-card border-border z-50">
                             {managers.map((manager) => (
-                              <SelectItem key={manager.id} value={manager.name}>
+                              <SelectItem key={manager.id} value={manager.id}>
                                 {manager.name} ({manager.role})
                               </SelectItem>
                             ))}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,36 +7,45 @@ import { useNavigate } from "react-router-dom";
 
 const EmployeeDashboard = () => {
   const navigate = useNavigate();
-  
-  const expenses = [
-    {
-      id: 1,
-      employee: "Sarah",
-      description: "Restaurant Bill",
-      date: "4th Oct, 2025",
-      category: "Food",
-      paidBy: "Sarah",
-      remarks: "None",
-      amount: "5000 rs",
-      status: "Draft",
-    },
-    {
-      id: 2,
-      employee: "Sarah",
-      description: "Taxi Fare",
-      date: "3rd Oct, 2025",
-      category: "Transport",
-      paidBy: "Sarah",
-      remarks: "Airport",
-      amount: "1200 rs",
-      status: "Submitted",
-    },
-  ];
+
+  const [expenses, setExpenses] = useState([]);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/expenses`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      setExpenses(data.expenses || []);
+    };
+
+    fetchExpenses();
+  }, []);
 
   const stats = [
-    { label: "To Submit", value: "5467 rs", icon: FileText, color: "text-muted-foreground" },
-    { label: "Waiting Approval", value: "33674 rs", icon: Clock, color: "text-warning" },
-    { label: "Approved", value: "500 rs", icon: CheckCircle, color: "text-success" },
+    {
+      label: "To Submit",
+      value: expenses.filter((e: any) => e.status === "draft").length,
+      icon: FileText,
+      color: "text-muted-foreground",
+    },
+    {
+      label: "Waiting Approval",
+      value: expenses.filter((e: any) => e.status === "pending").length,
+      icon: Clock,
+      color: "text-warning",
+    },
+    {
+      label: "Approved",
+      value: expenses.filter((e: any) => e.status === "approved").length,
+      icon: CheckCircle,
+      color: "text-success",
+    },
   ];
 
   return (
@@ -63,17 +72,18 @@ const EmployeeDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="border-primary/20">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
+          {
+            stats.map((stat) => (
+              <Card key={stat.label} className="border-primary/20">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
 
         {/* Expenses Table */}
@@ -117,11 +127,10 @@ const EmployeeDashboard = () => {
                       <TableCell className="text-muted-foreground">{expense.remarks}</TableCell>
                       <TableCell className="font-semibold">{expense.amount}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          expense.status === "Draft" 
-                            ? "bg-muted text-muted-foreground" 
-                            : "bg-warning/10 text-warning"
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${expense.status === "Draft"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-warning/10 text-warning"
+                          }`}>
                           {expense.status}
                         </span>
                       </TableCell>

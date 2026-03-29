@@ -514,6 +514,7 @@
 //         res.status(500).json({ msg: 'Server error', error: err.message });
 //     }
 // };
+import db from '../config/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
@@ -597,7 +598,16 @@ export const login = async (req, res) => {
         const payload = { user: { id: user.id, role: user.role, company_id: user.company_id } };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ token });
+        // res.json({ token });
+        res.json({
+  token,
+  role: user.role,   // ✅ ADD THIS
+  user: {
+    id: user.id,
+    role: user.role,
+    company_id: user.company_id
+  }
+});
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
@@ -621,23 +631,27 @@ export const createEmployee = async (req, res) => {
             username,
             email,
             password: hashedTempPassword,
-            role: role || 'employee',
+            role: (role || 'employee').toLowerCase(),
             company_id,
             manager_id: manager_id || null,
-            is_active: false,
+            is_active: true,
             temp_password: tempPassword
         });
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Your Temporary Password for Expense Management',
-            text: `Hello ${username},\n\nYour temporary password is: ${tempPassword}\nPlease log in and change it.\n\nBest,\nYour Admin Team`
-        });
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Your Temporary Password for Expense Management',
+                text: `Hello ${username},\n\nYour temporary password is: ${tempPassword}\nPlease log in and change it.\n\nBest,\nYour Admin Team`
+            });
+        } catch (mailErr) {
+            console.log("Email failed but user created:", mailErr.message);
+        }
 
         res.status(201).json({ msg: 'Employee created and password sent' });
     } catch (err) {
-        console.error('Create employee error:', err);
+        console.error('CREATE EMPLOYEE FULL ERROR:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
@@ -646,7 +660,11 @@ export const createEmployee = async (req, res) => {
 export const getUsers = async (req, res) => {
     const company_id = req.user.company_id;
     try {
-        const users = await User.find({ company_id }).select("-password -temp_password");
+        // const users = await User.find({ company_id }).select("-password -temp_password");
+        const [users] = await db.query(
+            "SELECT id, username, email, role, company_id, manager_id, is_active, created_at FROM users WHERE company_id = ?",
+            [company_id]
+        );
         res.status(200).json({ users });
     } catch (err) {
         console.error('Get users error:', err);
@@ -660,40 +678,114 @@ export const deleteEmployee = async (req, res) => {
     const company_id = req.user.company_id;
 
     try {
-        const user = await User.findOne({ _id: id, company_id });
-        if (!user) return res.status(404).json({ msg: 'User not found' });
+        const [rows] = await db.query(
+            "SELECT * FROM users WHERE id = ? AND company_id = ?",
+            [id, company_id]
+        );
 
-        await User.deleteOne({ _id: id });
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        await db.query("DELETE FROM users WHERE id = ?", [id]);
+
         res.status(200).json({ msg: 'User deleted successfully' });
     } catch (err) {
         console.error('Delete employee error:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
+// export const deleteEmployee = async (req, res) => {
+//     const { id } = req.params;
+//     const company_id = req.user.company_id;
+
+//     try {
+//         const user = await User.findOne({ _id: id, company_id });
+//         if (!user) return res.status(404).json({ msg: 'User not found' });
+
+//         await User.deleteOne({ _id: id });
+//         res.status(200).json({ msg: 'User deleted successfully' });
+//     } catch (err) {
+//         console.error('Delete employee error:', err);
+//         res.status(500).json({ msg: 'Server error', error: err.message });
+//     }
+// };
 
 // -------------------- RESEND TEMP PASSWORD --------------------
+// export const resendPassword = async (req, res) => {
+//     const { id } = req.params;
+//     const company_id = req.user.company_id;
+
+//     try {
+//         //const user = await User.findOne({ _id: id, company_id });
+//         const [rows] = await db.query(
+//   "SELECT * FROM users WHERE id = ? AND company_id = ?",
+//   [id, company_id]
+// );
+
+// const user = rows[0];
+
+// const tempPassword = Math.random().toString(36).slice(-8);
+//         const salt = await bcrypt.genSalt(10);
+//         const hashedTempPassword = await bcrypt.hash(tempPassword, salt);
+
+
+// await db.query(
+//   "UPDATE users SET password = ?, temp_password = ?, is_active = ? WHERE id = ?",
+//   [hashedTempPassword, tempPassword, false, id]
+// );
+//          if (!user) return res.status(404).json({ msg: 'User not found' });
+
+//        // await User.updateOne({ _id: id }, { password: hashedTempPassword, temp_password: tempPassword, is_active: false });
+
+//         await transporter.sendMail({
+//             from: process.env.EMAIL_USER,
+//             to: user.email,
+//             subject: 'Your Temporary Password for Expense Management',
+//             text: `Hello ${user.username},\n\nYour temporary password is: ${tempPassword}\nPlease log in and change it.\n\nBest,\nYour Admin Team`
+//         });
+
+//         res.status(200).json({ msg: 'Temporary password sent successfully' });
+//     } catch (err) {
+//         console.error('Resend password error:', err);
+//         res.status(500).json({ msg: 'Server error', error: err.message });
+//     }
+// };
+
 export const resendPassword = async (req, res) => {
     const { id } = req.params;
     const company_id = req.user.company_id;
 
     try {
-        const user = await User.findOne({ _id: id, company_id });
+        const [rows] = await db.query(
+            "SELECT * FROM users WHERE id = ? AND company_id = ?",
+            [id, company_id]
+        );
+
+        const user = rows[0];
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
+        // ✅ GENERATE PASSWORD FIRST
         const tempPassword = Math.random().toString(36).slice(-8);
         const salt = await bcrypt.genSalt(10);
         const hashedTempPassword = await bcrypt.hash(tempPassword, salt);
 
-        await User.updateOne({ _id: id }, { password: hashedTempPassword, temp_password: tempPassword, is_active: false });
+        // ✅ THEN UPDATE DB
+        await db.query(
+            "UPDATE users SET password = ?, temp_password = ?, is_active = ? WHERE id = ?",
+            [hashedTempPassword, tempPassword, false, id]
+        );
 
+        // ✅ SEND EMAIL
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: user.email,
-            subject: 'Your Temporary Password for Expense Management',
-            text: `Hello ${user.username},\n\nYour temporary password is: ${tempPassword}\nPlease log in and change it.\n\nBest,\nYour Admin Team`
+            subject: 'Your Temporary Password',
+            text: `Hello ${user.username}, your password is ${tempPassword}`
         });
 
         res.status(200).json({ msg: 'Temporary password sent successfully' });
+
     } catch (err) {
         console.error('Resend password error:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
@@ -702,10 +794,35 @@ export const resendPassword = async (req, res) => {
 
 // -------------------- ADMIN DASHBOARD PLACEHOLDER --------------------
 export const adminDashboard = async (req, res) => {
-  // Fetch all employees from DB
-  const users = await User.find();
-  res.status(200).json({ users });
+    const company_id = req.user.company_id;
+
+    try {
+        const [users] = await db.query(
+            "SELECT id, username, email, role FROM users WHERE company_id = ?",
+            [company_id]
+        );
+
+        res.status(200).json({ users });
+    } catch (err) {
+        console.error('Dashboard error:', err);
+        res.status(500).json({ msg: 'Server error', error: err.message });
+    }
 };
+// export const adminDashboard = async (req, res) => {
+//   // Fetch all employees from DB
+//  // const users = await User.find();
+//   //res.status(200).json({ users });
+//   const [user] = await db.query(
+//   "SELECT * FROM users WHERE id = ? AND company_id = ?",
+//   [id, company_id]
+// );
+
+// if (user.length === 0) {
+//   return res.status(404).json({ msg: 'User not found' });
+// }
+
+// await db.query("DELETE FROM users WHERE id = ?", [id]);
+// };
 
 
 // -------------------- ADMIN DASHBOARD APPROVAL RULES --------------------
@@ -748,4 +865,73 @@ export const adminDashboardApprovalRules = async (req, res) => {
         console.error('Approval rules error:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
     }
+};
+
+export const createExpense = async (req, res) => {
+  const {
+    description,
+    amount,
+    currency,
+    category,
+    paidBy,
+    remarks,
+    expenseDate
+  } = req.body;
+
+  const user_id = req.user.id;
+  const company_id = req.user.company_id;
+
+  try {
+    await db.query(
+      `INSERT INTO expenses 
+      (user_id, company_id, description, amount, currency, category, paid_by, remarks, expense_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, company_id, description, amount, currency, category, paidBy, remarks, expenseDate]
+    );
+
+    res.status(201).json({ msg: "Expense created" });
+
+  } catch (err) {
+    console.error("EXPENSE ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// -------------------- GET EMPLOYEE EXPENSES --------------------
+export const getExpenses = async (req, res) => {
+  const user_id = req.user.id;
+
+  try {
+    const [expenses] = await db.query(
+      "SELECT * FROM expenses WHERE user_id = ?",
+      [user_id]
+    );
+
+    res.json({ expenses });
+
+  } catch (err) {
+    console.error("GET EXPENSE ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// -------------------- GET MANAGER EXPENSES --------------------
+export const getManagerExpenses = async (req, res) => {
+  const manager_id = req.user.id;
+
+  try {
+    const [expenses] = await db.query(
+      `SELECT e.*, u.username 
+       FROM expenses e
+       JOIN users u ON e.user_id = u.id
+       WHERE u.manager_id = ?`,
+      [manager_id]
+    );
+
+    res.json({ expenses });
+
+  } catch (err) {
+    console.error("MANAGER EXPENSE ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
 };

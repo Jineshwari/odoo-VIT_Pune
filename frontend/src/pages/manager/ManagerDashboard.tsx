@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+
+
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
@@ -42,7 +44,7 @@ const ManagerDashboard = () => {
           const converted = await convertCurrency(a.amount, a.currency, BASE_CURRENCY);
           return {
             ...a,
-            convertedAmount: `${converted.toFixed(2)} ${BASE_CURRENCY}`,
+            convertedAmount: `${Number(converted || 0).toFixed(2)} ${BASE_CURRENCY}`,
             originalAmount: `${a.amount} ${a.currency}`,
           };
         })
@@ -67,21 +69,44 @@ const ManagerDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchManagerExpenses = async () => {
+      try {
+        const token = localStorage.getItem("token");
 
-  const [approvals, setApprovals] = useState([
-    {
-      id: 1,
-      subject: "none",
-      requestOwner: "Sarah",
-      category: "Food",
-      requestStatus: "Pending",
-      amount: 567,          // raw amount
-      currency: "INR",      // currency fetched from expense
-      convertedAmount: "",  // will be auto-filled
-      originalAmount: "",   // for UI display
-    },
-  ]);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/manager-expenses`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
+        const data = await res.json();
+
+        console.log("MANAGER DATA:", data); // DEBUG
+
+        const formatted = (data.expenses || []).map((e: any) => ({
+          id: e.id,
+          subject: e.description,
+          requestOwner: e.username,
+          category: e.category,
+          requestStatus: e.status,
+          amount: e.amount,
+          currency: e.currency,
+          convertedAmount: "",
+          originalAmount: ""
+        }));
+
+        setApprovals(formatted);
+
+      } catch (err) {
+        console.error("FETCH ERROR:", err);
+      }
+    };
+
+    fetchManagerExpenses();
+  }, []);
+
+  const [approvals, setApprovals] = useState([]);
 
   const handleApprove = (id: number) => {
     const approval = approvals.find(a => a.id === id);
@@ -161,10 +186,10 @@ const ManagerDashboard = () => {
                       <TableCell>{approval.category}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${approval.requestStatus === "Approved"
-                            ? "bg-success/10 text-success"
-                            : approval.requestStatus === "Rejected"
-                              ? "bg-destructive/10 text-destructive"
-                              : "bg-warning/10 text-warning"
+                          ? "bg-success/10 text-success"
+                          : approval.requestStatus === "Rejected"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-warning/10 text-warning"
                           }`}>
                           {approval.requestStatus}
                         </span>

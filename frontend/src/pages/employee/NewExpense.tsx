@@ -61,12 +61,39 @@ const NewExpense = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   toast.success("Expense submitted for approval");
+  //   navigate("/employee");
+  // };
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Expense submitted for approval");
-    navigate("/employee");
-  };
 
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/expenses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success("Expense submitted!");
+        navigate("/employee");
+      } else {
+        toast.error(data.msg || "Failed to submit");
+      }
+
+    } catch (err) {
+      toast.error("Network error");
+    }
+  };
   const handleDraft = () => {
     toast.info("Expense saved as draft");
     navigate("/employee");
