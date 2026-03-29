@@ -27,7 +27,7 @@ A full-stack expense management system for companies built with **React**, **Typ
 - Send password emails to new employees
 - CRUD operations on employee data
 - Responsive UI with **Tailwind CSS**
-- Interactive tables and forms
+
 
 ---
 
