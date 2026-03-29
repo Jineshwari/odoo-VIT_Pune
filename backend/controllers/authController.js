@@ -935,3 +935,20 @@ export const getManagerExpenses = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
+export const updateExpenseStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status, comment } = req.body;
+
+  try {
+    await db.query(
+      "UPDATE expenses SET status = ?, remarks = ? WHERE id = ?",
+      [status, comment || null, id]
+    );
+
+    res.json({ msg: "Expense updated successfully" });
+  } catch (err) {
+    console.error("UPDATE ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};

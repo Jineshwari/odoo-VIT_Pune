@@ -108,36 +108,112 @@ const ManagerDashboard = () => {
 
   const [approvals, setApprovals] = useState([]);
 
-  const handleApprove = (id: number) => {
-    const approval = approvals.find(a => a.id === id);
-    if (!approval) return;
+ const handleApprove = async (id: number) => {
+  try {
+    const token = localStorage.getItem("token");
 
-    toast.success(`Expense approved successfully for ${approval.requestOwner}`);
-    const updated = approvals.map(a =>
-      a.id === id ? { ...a, requestStatus: "Approved" } : a
-    );
-    setApprovals(updated);
-    setSelectedExpense(null);
-    setComment("");
-  };
+   // await (`${import.meta.env.VITE_API_URL}/expensefetchs/${id}`, {
+   await fetch(`${import.meta.env.VITE_API_URL}/auth/expenses/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status: "approved" })
+    });
 
-  const handleReject = (id: number) => {
-    if (!comment.trim()) {
-      toast.error("Please add a comment for rejection");
+    toast.success("Approved successfully");
+
+    // REFRESH DATA FROM BACKEND
+    window.location.reload();
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Error approving");
+  }
+};
+
+//  const handleReject = async (id: number) => {
+//   if (!comment.trim()) {
+//     toast.error("Please add a comment");
+//     return;
+//   }
+
+//   try {
+//     const token = localStorage.getItem("token");
+
+//     await fetch(`${import.meta.env.VITE_API_URL}/expenses/${id}`, {
+//       method: "PUT",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`
+//       },
+//       body: JSON.stringify({
+//         status: "rejected",
+//         comment
+//       })
+//     });
+
+//     toast.success("Rejected");
+
+//     window.location.reload();
+
+//   } catch (err) {
+//     console.error(err);
+//     toast.error("Error rejecting");
+//   }
+// };
+
+const handleReject = async (id: number) => {
+  if (!comment.trim()) {
+    toast.error("Please add a comment");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/expenses/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        status: "rejected",
+        comment
+      })
+    });
+
+    //const data = await res.json();
+    let data;
+
+try {
+  data = await res.json();
+} catch {
+  data = null;
+}
+
+if (!res.ok) {
+  console.error("ERROR RESPONSE:", data);
+  toast.error(data?.msg || "Reject failed");
+  return;
+}
+
+    if (!res.ok) {
+      toast.error(data.msg || "Reject failed");
       return;
     }
 
-    const approval = approvals.find(a => a.id === id);
-    if (!approval) return;
+    toast.success("Rejected successfully");
 
-    toast.error(`Expense rejected for ${approval.requestOwner}`);
-    const updated = approvals.map(a =>
-      a.id === id ? { ...a, requestStatus: "Rejected", rejectionComment: comment } : a
-    );
-    setApprovals(updated);
-    setSelectedExpense(null);
-    setComment("");
-  };
+    window.location.reload();
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Error rejecting");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/10">
@@ -185,9 +261,9 @@ const ManagerDashboard = () => {
                       <TableCell>{approval.requestOwner}</TableCell>
                       <TableCell>{approval.category}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${approval.requestStatus === "Approved"
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${approval.requestStatus === "approved"
                           ? "bg-success/10 text-success"
-                          : approval.requestStatus === "Rejected"
+                          : approval.requestStatus === "rejected"
                             ? "bg-destructive/10 text-destructive"
                             : "bg-warning/10 text-warning"
                           }`}>
@@ -206,7 +282,7 @@ const ManagerDashboard = () => {
                             size="sm"
                             className="bg-success hover:bg-success/90 text-white"
                             onClick={() => handleApprove(approval.id)}
-                            disabled={approval.requestStatus === "Approved" || approval.requestStatus === "Rejected"}
+                            disabled={approval.requestStatus === "approved" || approval.requestStatus === "rejected"}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
@@ -215,7 +291,7 @@ const ManagerDashboard = () => {
                             size="sm"
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                             onClick={() => setSelectedExpense(approval)}
-                            disabled={approval.requestStatus === "Approved" || approval.requestStatus === "Rejected"}
+                            disabled={approval.requestStatus === "approved" || approval.requestStatus === "rejected"}
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject

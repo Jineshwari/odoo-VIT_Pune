@@ -25,6 +25,7 @@ router.get('/manager-expenses', protect, authorize('manager'), getManagerExpense
 // Create expense
 router.post('/expenses', protect, authorize('employee'), createExpense);
 // or create a new controller method getEmployees
+router.put("/expenses/:id", authMiddleware, updateExpenseStatus);
 
 
 export default router;
