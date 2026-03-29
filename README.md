@@ -98,6 +98,13 @@ As described in the hackathon:
 * View all expenses across company
 
 ---
+### 🔮 Enhancements
+
+* OCR-based receipt scanning (as per problem statement)
+* Currency conversion APIs
+* Conditional approval engine
+
+---
 
 ### 🏢 Multi-Tenant Architecture
 
@@ -124,14 +131,6 @@ As described in the hackathon:
 * MySQL
 * JWT Authentication
 * REST APIs
-
----
-
-### 🔮 Planned Enhancements
-
-* OCR-based receipt scanning (as per problem statement)
-* Currency conversion APIs
-* Conditional approval engine
 
 ---
 
@@ -221,15 +220,6 @@ npm run dev
 ### Timeline
 
 * `GET /api/expenses/:id/timeline`
-
----
-
-## 🚀 Future Scope
-
-* OCR integration for receipts
-* Conditional approval engine
-* Email notifications
-* Analytics dashboard
 
 ---
 
